@@ -3,10 +3,11 @@ import Bundlr from "@bundlr-network/client";
 import Arweave from 'arweave';
 import deepHash from 'arweave/node/lib/deepHash';
 import ArweaveBundles from 'arweave-bundles';
-import { bundleAndSignData, createData } from "arbundles";
+import {bundleAndSignData, createData, signers } from "arbundles";
 import ArweaveSigner from "arseeding-arbundles/src/signing/chains/ArweaveSigner"
 import fs from "fs"
 import path from "path"
+import { webcrypto } from 'crypto'
 
 require('dotenv').config()
 
@@ -16,10 +17,10 @@ require('dotenv').config()
 
 // 
 
-const processTransactions = async(bundlr: any) => {
+const processTransactions = async() => {
   const arweave = Arweave.init({});
   const ephemeral = await arweave.wallets.generate();
-  const signer = new ArweaveSigner(ephemeral);
+  // const signer = new ArweaveSigner(ephemeral);
 
   fs.readdir(path.resolve(__dirname, './data'), (err, files) => {
     files.map(fileName => {
@@ -27,22 +28,23 @@ const processTransactions = async(bundlr: any) => {
       // run logic to create DAtaItem
       let file = fs.readFileSync(path.resolve(__dirname, './data', fileName))
       console.log(file)
-      prepFile(file, signer)
+      // console.log(signer)
+      // prepFile(file, signer)
     })
   })
 }
 
-const prepFile = async(file: Buffer, ephemeralSigner: any) => {
-  let item = createData(
-    file,
-    ephemeralSigner,
-    {
-      tags: [{ name: "Content-Type", value: "m4a" }], //refactor later to get file type 
-    }
-  );
-  await item.sign(ephemeralSigner);
-  return item;
-}
+// const prepFile = async(file: Buffer, ephemeralSigner: any) => {
+//   let item = createData(
+//     file,
+//     ephemeralSigner,
+//     {
+//       tags: [{ name: "Content-Type", value: "m4a" }], //refactor later to get file type 
+//     }
+//   );
+//   await item.sign(ephemeralSigner);
+//   return item;
+// }
 
 processTransactions()
 
@@ -92,12 +94,12 @@ const upload = async (payload: BundlrPayload[]) => {
   const nodeBalance = await getFundedNodeBalance(bundlr)
   if( priceErorr !== null ) {
   } else if(price <= nodeBalance) {
-    processTransactions(bundlr)
+    processTransactions()
   } else {
     let[fundError, fundResponse] = await fundNode(bundlr, price)
       if(fundError != null ) {
       } else {
-        processTransactions(bundlr)
+        processTransactions()
       }
   }
 }
