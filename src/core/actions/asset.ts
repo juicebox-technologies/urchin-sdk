@@ -20,7 +20,7 @@ require('dotenv').config()
 const processTransactions = async() => {
   const arweave = Arweave.init({});
   const ephemeral = await arweave.wallets.generate();
-  // const signer = new ArweaveSigner(ephemeral);
+  const signer = new ArweaveSigner(ephemeral);
 
   fs.readdir(path.resolve(__dirname, './data'), (err, files) => {
     files.map(fileName => {
@@ -28,7 +28,7 @@ const processTransactions = async() => {
       // run logic to create DAtaItem
       let file = fs.readFileSync(path.resolve(__dirname, './data', fileName))
       console.log(file)
-      // console.log(signer)
+      console.log(signer)
       // prepFile(file, signer)
     })
   })
