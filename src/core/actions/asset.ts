@@ -7,17 +7,9 @@ import {bundleAndSignData, createData, signers } from "arbundles";
 import ArweaveSigner from "arseeding-arbundles/src/signing/chains/ArweaveSigner"
 import fs from "fs"
 import path from "path"
-import { webcrypto } from 'crypto'
-
 require('dotenv').config()
 
-// const signer = new ArweaveSigner(process.env.PRIVATE_KEY);
-// const dataItems = [createData("some data"), createData("some other data")];
-
-
-// 
-
-const processTransactions = async() => {
+const processTransactions = async(bundlr: any) => {
   const arweave = Arweave.init({});
   const ephemeral = await arweave.wallets.generate();
   const signer = new ArweaveSigner(ephemeral);
@@ -25,28 +17,39 @@ const processTransactions = async() => {
   fs.readdir(path.resolve(__dirname, './data'), (err, files) => {
     files.map(fileName => {
       console.log(fileName)
-      // run logic to create DAtaItem
       let file = fs.readFileSync(path.resolve(__dirname, './data', fileName))
-      console.log(file)
-      console.log(signer)
-      // prepFile(file, signer)
+      prepFile(bundlr, file, signer)
     })
   })
 }
 
-// const prepFile = async(file: Buffer, ephemeralSigner: any) => {
-//   let item = createData(
-//     file,
-//     ephemeralSigner,
-//     {
-//       tags: [{ name: "Content-Type", value: "m4a" }], //refactor later to get file type 
-//     }
-//   );
-//   await item.sign(ephemeralSigner);
-//   return item;
-// }
+const prepFile = async(bundlr: any, file: Buffer, ephemeralSigner: any) => {
+  console.log(bundlr.currencyConfig.getSigner())
+  let item = createData(
+    file,
+    bundlr.currencyConfig.getSigner(), // or ephemeralSigner => both throw the same error
+    {
+      tags: [{ name: "Content-Type", value: "txt" }], //refactor later to get file type 
+    }
+  );
 
-processTransactions()
+  console.log(item.isValid)
+  // await item.sign(ephemeralSigner);
+  // return item;
+}
+
+
+// remove after testing
+const bundlr = new Bundlr(
+  "https://devnet.bundlr.network",
+  "solana",
+  process.env.PHANTOM_PRIVATE_KEY, 
+  {
+      providerUrl: "https://api.devnet.solana.com"
+  }
+)
+
+processTransactions(bundlr)
 
 const getTransactionPrice = async(fileSize: number, bundlr: any) => {
   let[err, price]: [any, any] = [null, null]
@@ -94,12 +97,12 @@ const upload = async (payload: BundlrPayload[]) => {
   const nodeBalance = await getFundedNodeBalance(bundlr)
   if( priceErorr !== null ) {
   } else if(price <= nodeBalance) {
-    processTransactions()
+    processTransactions(bundlr)
   } else {
     let[fundError, fundResponse] = await fundNode(bundlr, price)
       if(fundError != null ) {
       } else {
-        processTransactions()
+        processTransactions(bundlr)
       }
   }
 }
