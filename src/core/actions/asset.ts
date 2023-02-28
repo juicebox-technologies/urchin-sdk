@@ -3,30 +3,26 @@ import Bundlr from "@bundlr-network/client";
 import Arweave from 'arweave';
 import deepHash from 'arweave/node/lib/deepHash';
 import ArweaveBundles from 'arweave-bundles';
-import {bundleAndSignData, createData, signers } from "arbundles";
+import {bundleAndSignData, createData, file, signers } from "arbundles";
 import ArweaveSigner from "arseeding-arbundles/src/signing/chains/ArweaveSigner"
-import fs from "fs"
+import fs from "fs/promises"
 import path from "path"
 require('dotenv').config()
 
 const processTransactions = async(bundlr: any) => {
   const arweave = Arweave.init({});
   const ephemeral = await arweave.wallets.generate();
-  // const signer = new ArweaveSigner(ephemeral);
 
-  let dataItems:any = []
-  await fs.readdir(path.resolve(__dirname, './data'), async (err, files) => {
-    dataItems = await files.map(async fileName => {
-      let file = fs.readFileSync(path.resolve(__dirname, './data', fileName))
-      let result =  await prepFile(file, ephemeral)
-      return result
-    })
-  })
+  let files = await fs.readdir(path.resolve(__dirname, './data'))
+  let dataItems = Promise.all(files.map(async fileName => {
+    let file = await fs.readFile(path.resolve(__dirname, './data', fileName))
+    return await createAndSignDataItem(file, ephemeral)
+  }))
 
-  return dataItems
+  return await dataItems
 }
 
-const prepFile = async(file: Buffer, ephemeral: any) => {
+const createAndSignDataItem = async(file: Buffer, ephemeral: any) => {
   const deps = {
     utils: Arweave.utils,
     crypto: Arweave.crypto,
