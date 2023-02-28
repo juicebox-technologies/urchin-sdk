@@ -12,30 +12,42 @@ require('dotenv').config()
 const processTransactions = async(bundlr: any) => {
   const arweave = Arweave.init({});
   const ephemeral = await arweave.wallets.generate();
-  const signer = new ArweaveSigner(ephemeral);
+  // const signer = new ArweaveSigner(ephemeral);
 
-  fs.readdir(path.resolve(__dirname, './data'), (err, files) => {
-    files.map(fileName => {
-      console.log(fileName)
+  let dataItems:any = []
+  await fs.readdir(path.resolve(__dirname, './data'), async (err, files) => {
+    dataItems = await files.map(async fileName => {
       let file = fs.readFileSync(path.resolve(__dirname, './data', fileName))
-      prepFile(bundlr, file, signer)
+      let result =  await prepFile(file, ephemeral)
+      return result
     })
   })
+
+  return dataItems
 }
 
-const prepFile = async(bundlr: any, file: Buffer, ephemeralSigner: any) => {
-  console.log(bundlr.currencyConfig.getSigner())
-  let item = createData(
-    file,
-    bundlr.currencyConfig.getSigner(), // or ephemeralSigner => both throw the same error
-    {
-      tags: [{ name: "Content-Type", value: "txt" }], //refactor later to get file type 
-    }
+const prepFile = async(file: Buffer, ephemeral: any) => {
+  const deps = {
+    utils: Arweave.utils,
+    crypto: Arweave.crypto,
+    deepHash: deepHash,
+  }
+  
+  const arBundles = ArweaveBundles(deps);
+
+  let item:any = await arBundles.createData(
+    { 
+      data: "file-string", 
+      tags: [
+        { name: 'App-Name', value: 'myApp' },
+        { name: 'App-Version', value: '1.0.0' }
+      ]
+    }, 
+    ephemeral
   );
 
-  console.log(item.isValid)
-  // await item.sign(ephemeralSigner);
-  // return item;
+  const data = await arBundles.sign(item, ephemeral);
+  return data;
 }
 
 
