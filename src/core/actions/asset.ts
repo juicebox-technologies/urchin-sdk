@@ -171,7 +171,6 @@ const upload = async (payload: BundlrPayload[]) => {
     let[fundError, fundResponse] = await fundNode(bundlr, price)
       if(fundError != null ) {
       } else {
-        console.log("going for it");
         generateTransactionItems(bundlr, ephemeral, arweave, arBundles)
       }
   }
