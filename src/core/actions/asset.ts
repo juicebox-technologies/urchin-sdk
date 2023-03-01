@@ -4,38 +4,26 @@ import Arweave from 'arweave';
 import deepHash from 'arweave/node/lib/deepHash';
 import ArweaveBundles from 'arweave-bundles';
 import {bundleAndSignData, createData, file, signers } from "arbundles";
-import ArweaveSigner from "arseeding-arbundles/src/signing/chains/ArweaveSigner"
 import fs from "fs/promises"
 import path from "path"
 require('dotenv').config()
 
-const processTransactions = async(bundlr: any) => {
-  const arweave = Arweave.init({});
-  const ephemeral = await arweave.wallets.generate();
-
+const generateTransactionItems = async(bundlr: any, ephemeral: any, arweave: any, arBundles: any) => {
   let files = await fs.readdir(path.resolve(__dirname, './data'))
   let dataItems = Promise.all(files.map(async fileName => {
     let file = await fs.readFile(path.resolve(__dirname, './data', fileName))
-    return await createAndSignDataItem(file, ephemeral)
+    return await createAndSignDataItem(file, ephemeral, arweave, arBundles)
   }))
 
   return await dataItems
 }
 
-const createAndSignDataItem = async(file: Buffer, ephemeral: any) => {
-  const deps = {
-    utils: Arweave.utils,
-    crypto: Arweave.crypto,
-    deepHash: deepHash,
-  }
-  
-  const arBundles = ArweaveBundles(deps);
-
+const createAndSignDataItem = async(file: Buffer, ephemeral: any, arweave: any, arBundles: any) => {
   let item:any = await arBundles.createData(
     { 
-      data: "file-string", 
+      data: file, 
       tags: [
-        { name: 'App-Name', value: 'myApp' },
+        { name: 'App-Name', value: 'myApp' }, //update to have correct content type and other file info
         { name: 'App-Version', value: '1.0.0' }
       ]
     }, 
@@ -43,9 +31,39 @@ const createAndSignDataItem = async(file: Buffer, ephemeral: any) => {
   );
 
   const data = await arBundles.sign(item, ephemeral);
+
   return data;
 }
 
+const bundleAndSignDataFunc = async(dataItems:any, bundlr: any, ephemeral: any, arweave: any, arBundles: any) => {
+  let manifestItem:any = await arBundles.createData(
+    { 
+      data: (await bundlr.uploader.generateManifest({items: dataItems})).manifest,
+      tags: [
+        { 
+          name: "Type",
+          value: "manifest"
+        }, 
+        { 
+          name: "Content-Type", 
+          value: "application/x.arweave-manifest+json" 
+        }
+      ]
+    }, 
+    ephemeral
+  );
+  
+  const manifest = await arBundles.sign(manifestItem, ephemeral);
+  
+  const myBundle = await arBundles.bundleData([...dataItems, manifest]);
+  console.log(myBundle)
+
+
+  const myTx = await arweave.createTransaction({ data: myBundle }, ephemeral);
+  
+  console.log(myTx)
+
+}
 
 // remove after testing
 const bundlr = new Bundlr(
@@ -57,7 +75,31 @@ const bundlr = new Bundlr(
   }
 )
 
-processTransactions(bundlr)
+const test = async() => {
+  const arweave = Arweave.init({});
+  const ephemeral = await arweave.wallets.generate();
+
+    const deps = {
+    utils: Arweave.utils,
+    crypto: Arweave.crypto,
+    deepHash: deepHash,
+  }
+  
+  const arBundles = ArweaveBundles(deps);
+
+  // // iterate over the directory, creating a mapping 
+  // of path to DataItem instances, which you then create+sign using this signer
+  let items = await generateTransactionItems(bundlr, ephemeral, arweave, arBundles)
+
+  // pass a new mapping of paths to IDs to bundlr.uploader.generateManifest, 
+  // then create a DataItem from this data for the manifest 
+  // with the tags [{ name: "Type", value: "manifest" }, 
+  // { name: "Content-Type", value: "application/x.arweave-manifest+json" }]  
+  bundleAndSignDataFunc(items, bundlr, ephemeral, arweave, arBundles)
+
+}
+test()
+
 
 const getTransactionPrice = async(fileSize: number, bundlr: any) => {
   let[err, price]: [any, any] = [null, null]
@@ -91,6 +133,7 @@ const fundNode = async (bundlr: any, price: any) => {
 }
 
 const upload = async (payload: BundlrPayload[]) => {
+  return
   const bundlr = new Bundlr(
     "https://devnet.bundlr.network",
     "solana",
@@ -99,18 +142,30 @@ const upload = async (payload: BundlrPayload[]) => {
         providerUrl: "https://api.devnet.solana.com"
     }
   )
+
+  const arweave = Arweave.init({});
+  const ephemeral = await arweave.wallets.generate();
+
+    const deps = {
+    utils: Arweave.utils,
+    crypto: Arweave.crypto,
+    deepHash: deepHash,
+  }
+  
+  const arBundles = ArweaveBundles(deps);
+
   
   const dataSizeToCheck = 1; // temp remove this later 
   const[priceErorr, price] = await getTransactionPrice(dataSizeToCheck, bundlr)
   const nodeBalance = await getFundedNodeBalance(bundlr)
   if( priceErorr !== null ) {
   } else if(price <= nodeBalance) {
-    processTransactions(bundlr)
+    generateTransactionItems(bundlr, ephemeral, arweave, arBundles)
   } else {
     let[fundError, fundResponse] = await fundNode(bundlr, price)
       if(fundError != null ) {
       } else {
-        processTransactions(bundlr)
+        generateTransactionItems(bundlr, ephemeral, arweave, arBundles)
       }
   }
 }
