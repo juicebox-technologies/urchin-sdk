@@ -1,14 +1,15 @@
 type Taxonomy = {
     label: string;
+    level: number;
+    parent: string;
+    publicKey: string;
+    updated: number;
 };
 
 type TaxonomyPayload = {
     label: string;
     parent?: string;
+    publicKey?: string;
 };
 
-type TaxonomyQueues = {
-    [name: string]: Taxonomy[];
-};
-
-export type { Taxonomy, TaxonomyPayload, TaxonomyQueues };
+export type { Taxonomy, TaxonomyPayload };

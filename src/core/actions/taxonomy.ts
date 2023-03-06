@@ -1,43 +1,43 @@
-import { Taxonomy, TaxonomyPayload, TaxonomyQueues } from '../../types/taxonomy';
-import { validateCreateTaxonomySchema } from '../../validators/taxonomy';
+import { Taxonomy, TaxonomyPayload } from '../../types/taxonomy';
+import { validateCreateTaxonomySchema, validateGetTaxonomiesSchema, validateUpdateTaxonomySchema } from '../../validators/taxonomy';
 
-let QUEUES: TaxonomyQueues = {};
+let CREATE_QUEUE: TaxonomyPayload[] = [];
+let UPDATE_QUEUE: TaxonomyPayload[] = [];
 
-const createTaxonomy = (queue: string, payload: TaxonomyPayload): Taxonomy => {
+const createTaxonomy = (payload: TaxonomyPayload): TaxonomyPayload => {
   validateCreateTaxonomySchema(payload);
 
-  if (!QUEUES[queue]) QUEUES[queue] = [];
-
-  QUEUES[queue].push(payload);
+  CREATE_QUEUE.push(payload);
 
   return payload;
 };
 
-const getTaxonomyQueue = (queue: string): Taxonomy[] => {
-  if (!QUEUES[queue]) return [];
+const getTaxonomies = (publicKeys: string[] = []): Taxonomy[] => {
+  validateGetTaxonomiesSchema(publicKeys);
 
-  return QUEUES[queue];
+  return [];
 };
 
-const processTaxonomyQueue = (queue: string) => {
-  const createSolanaRecords = () => { // TODO: add to dedicated services folder for SOLANA
-    // do something
-    return {
-        pubkey: "111111111111111111111111"
-    };
-  };
-
-  const uploadToArweave = () => { // TODO: add to dedicated services folder for ARWEAVE
-    // do something
-    return {
-        id: "222222222222222222222222"
-    };
-  };
-
-  const r1 = createSolanaRecords();
-  const r2 = uploadToArweave();
-
-  return { success: true, ...r1, ...r2 };
+const getTaxonomiesCreateQueue = (): TaxonomyPayload[] => {
+  return CREATE_QUEUE;
 };
 
-export { createTaxonomy, getTaxonomyQueue, processTaxonomyQueue };
+const getTaxonomiesUpdateQueue = (): TaxonomyPayload[] => {
+  return UPDATE_QUEUE;
+};
+
+const updateTaxonomy = (payload: TaxonomyPayload): TaxonomyPayload => {
+  validateUpdateTaxonomySchema(payload);
+
+  UPDATE_QUEUE.push(payload);
+
+  return payload;
+};
+
+export {
+  createTaxonomy,
+  getTaxonomies,
+  getTaxonomiesCreateQueue,
+  getTaxonomiesUpdateQueue,
+  updateTaxonomy
+};
