@@ -26,6 +26,14 @@ const getTaxonomiesUpdateQueue = (): TaxonomyPayload[] => {
   return UPDATE_QUEUE;
 };
 
+const resetTaxonomiesCreateQueue = (): void => {
+  CREATE_QUEUE = [];
+};
+
+const resetTaxonomiesUpdateQueue = (): void => {
+  UPDATE_QUEUE = [];
+};
+
 const updateTaxonomy = (payload: TaxonomyPayload): TaxonomyPayload => {
   validateUpdateTaxonomySchema(payload);
 
@@ -39,5 +47,7 @@ export {
   getTaxonomies,
   getTaxonomiesCreateQueue,
   getTaxonomiesUpdateQueue,
+  resetTaxonomiesCreateQueue,
+  resetTaxonomiesUpdateQueue,
   updateTaxonomy
 };

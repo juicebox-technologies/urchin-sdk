@@ -7,6 +7,8 @@ let UPDATE_QUEUE: UpdateAssetPayload[] = [];
 const createAsset = (payload: CreateAssetPayload): CreateAssetPayload => {
   validateCreateAssetSchema(payload);
 
+  CREATE_QUEUE.push(payload);
+
   return payload;
 };
 
@@ -24,8 +26,18 @@ const getAssetsUpdateQueue = (): UpdateAssetPayload[] => {
   return UPDATE_QUEUE;
 };
 
+const resetAssetsCreateQueue = (): void => {
+  CREATE_QUEUE = [];
+};
+
+const resetAssetsUpdateQueue = (): void => {
+  UPDATE_QUEUE = [];
+};
+
 const updateAsset = (payload: UpdateAssetPayload): UpdateAssetPayload => {
   validateUpdateAssetSchema(payload);
+
+  UPDATE_QUEUE.push(payload);
 
   return payload;
 };
@@ -35,5 +47,7 @@ export {
   getAssets,
   getAssetsCreateQueue,
   getAssetsUpdateQueue,
+  resetAssetsCreateQueue,
+  resetAssetsUpdateQueue,
   updateAsset
 };
