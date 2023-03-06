@@ -9,4 +9,8 @@ type CreateAssetPayload = {
   original: string;
 };
 
-export type { Asset, CreateAssetPayload };
+type UpdateAssetPayload = {
+  original: string;
+};
+
+export type { Asset, CreateAssetPayload, UpdateAssetPayload };

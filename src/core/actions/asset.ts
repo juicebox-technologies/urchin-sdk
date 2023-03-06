@@ -1,15 +1,13 @@
-import { Asset, CreateAssetPayload } from '../../types/asset';
-import { validateCreateAssetSchema, validateGetAssetsSchema } from '../../validators/asset';
+import { Asset, CreateAssetPayload, UpdateAssetPayload } from '../../types/asset';
+import { validateCreateAssetSchema, validateGetAssetsSchema, validateUpdateAssetSchema } from '../../validators/asset';
 
-const createAsset = (payload: CreateAssetPayload): Asset => {
+let CREATE_QUEUE: CreateAssetPayload[] = [];
+let UPDATE_QUEUE: UpdateAssetPayload[] = [];
+
+const createAsset = (payload: CreateAssetPayload): CreateAssetPayload => {
   validateCreateAssetSchema(payload);
 
-  return {
-    id: '',
-    publicKey: '',
-    updated: 0,
-    url: '',
-  };
+  return payload;
 };
 
 const getAssets = (publicKeys: string[] = []): Asset[] => {
@@ -18,4 +16,24 @@ const getAssets = (publicKeys: string[] = []): Asset[] => {
   return [];
 };
 
-export { createAsset, getAssets };
+const getAssetsCreateQueue = (): CreateAssetPayload[] => {
+  return CREATE_QUEUE;
+};
+
+const getAssetsUpdateQueue = (): UpdateAssetPayload[] => {
+  return UPDATE_QUEUE;
+};
+
+const updateAsset = (payload: UpdateAssetPayload): UpdateAssetPayload => {
+  validateUpdateAssetSchema(payload);
+
+  return payload;
+};
+
+export {
+  createAsset,
+  getAssets,
+  getAssetsCreateQueue,
+  getAssetsUpdateQueue,
+  updateAsset
+};
