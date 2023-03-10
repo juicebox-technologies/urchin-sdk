@@ -2,13 +2,11 @@ import { bundleAndSignData, createData, DataItem, Bundle } from "arbundles";
 import fs from "fs/promises"
 import path from "path"
 
-const prepFilesForTransaction = async(signer: any): Promise<Map<string, DataItem>> => {
-    let files = await fs.readdir(path.resolve(__dirname, './data'))
+const prepFilesForTransaction = async(signer: any, files: File[]): Promise<Map<string, DataItem>> => {
     const items: [string, DataItem][] = await Promise.all(
-      files.map(async (fileName) => {
-        let file = await fs.readFile(path.resolve(__dirname, './data', fileName))
+      files.map(async (file) => {
         return [
-          fileName,
+          file.name,
           await prepFile(file, signer),
         ];
       })
@@ -17,9 +15,9 @@ const prepFilesForTransaction = async(signer: any): Promise<Map<string, DataItem
     return new Map(items);
   }
   
-  const prepFile = async(file: Buffer, signer: any): Promise<DataItem> => {
+  const prepFile = async(file: File, signer: any): Promise<DataItem> => {
     let item = createData(
-      new Uint8Array(file),
+      new Uint8Array(await file.arrayBuffer()),
       signer,
       {
         tags: [{ name: "Content-Type", value: "txt" }],
@@ -52,8 +50,8 @@ const prepFilesForTransaction = async(signer: any): Promise<Map<string, DataItem
     return bundle
   }
   
-  export const uploadFiles = async(bundlr: any, signer: any): Promise<string> => {
-    let itemsMap = await prepFilesForTransaction(signer)
+  export const uploadFiles = async(bundlr: any, signer: any, files: File[]): Promise<string> => {
+    let itemsMap = await prepFilesForTransaction(signer, files)
     let signedBundles = await bundleTransactionItems(itemsMap, signer, bundlr)
     await bundlr.ready()
   
@@ -85,15 +83,3 @@ const prepFilesForTransaction = async(signer: any): Promise<Map<string, DataItem
     return atomicBalance
   }
   
-  export const fundNode = async (bundlr: any, price: any) => {
-    try {
-      let response = await bundlr.fund(price);
-      console.log(
-          `Funding successful txID=${response.id} amount funded=${response.quantity}`,
-      );
-      return [null, response]
-    } catch (e) {
-      console.log("Error funding node ", e);
-      return [e, null]
-    } 
-  }

@@ -1,10 +1,10 @@
 import Bundlr from "@bundlr-network/client";
 import Arweave from 'arweave';
 import { signers } from "arbundles";
-import {uploadFiles, fundNode, getTransactionPrice, getFundedNodeBalance} from './arbundle-helpers'
+import {uploadFiles, getTransactionPrice, getFundedNodeBalance} from './arbundle-helpers'
 require('dotenv').config()
 
-const upload = async (files: string[]): Promise<any> => {
+const upload = async (files: File[]): Promise<any> => {
   const bundlr = new Bundlr(
     "https://devnet.bundlr.network",
     "solana",
@@ -28,20 +28,24 @@ const upload = async (files: string[]): Promise<any> => {
   
   const fileSize = 1000000; // change to check for file sizes once we have that logic ready
   const[err, price] = await getTransactionPrice(fileSize, bundlr)
-  const nodeBalance = await getFundedNodeBalance(bundlr)
-  
+
   if( err !== null ) {
     throw new Error(`Could not connect to wallet: ${err}`);
-  } else if(price <= nodeBalance) {
-    uploadFiles(bundlr, signer)
+  } 
+  
+  const nodeBalance = await getFundedNodeBalance(bundlr)
+  
+  if(price <= nodeBalance) {
+    uploadFiles(bundlr, signer, files)
   } else {
-    let[err, _] = await fundNode(bundlr, price)
-      if(err != null ) {
-        uploadFiles(bundlr, signer)
-      } else {
-        throw new Error(`Could not connect to wallet: ${err}`);
-      }
+    try {
+      await bundlr.fund(price);
+      uploadFiles(bundlr, signer, files)
+    } catch (e) {
+      throw new Error(`${e}`)
+    } 
   }
 }
 
 export { upload };
+
